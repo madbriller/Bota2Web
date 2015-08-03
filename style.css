@@ -1,0 +1,43 @@
+
+body { 
+	color: #666;
+	text-align: center;
+}
+
+h1 {
+	text-align:center;
+}
+
+/* STRUCTURE */
+
+#wrapper {
+	padding: 5px;
+	width: 960px;
+	margin: 20px auto;
+}
+header {
+	height: 100px;
+	padding: 0 15px;
+}
+#teamOne {
+	width: 290px;
+	float: left;
+	padding: 5px 15px;
+}
+
+#vs {
+	width: 294px; /* Account for margins + border values */
+	float: left;
+	padding: 5px 15px;
+	margin: 0px 5px 5px 5px;
+}
+
+#teamTwo {
+	width: 270px;
+	padding: 5px 15px;
+	float: left;
+}
+footer {
+	clear: both;
+	padding: 0 15px;
+}
