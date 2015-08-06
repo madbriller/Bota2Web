@@ -5,19 +5,19 @@
 			session_start();
 			include("common.php");
 			$db = connect_and_get_DB();
-			$teamList = mysqli_query($db, "SELECT * FROM dotainfo.teams;");
-			if(isset($_POST["submitted"])) {
-				$teamID = get_teamID_by_name($db,$_POST["teamCombo"]);
-				$query = $db->prepare("DELETE FROM dotainfo.teams WHERE teamID = ? LIMIT 1;");
+			$teamList = mysqli_query($db, "SELECT * FROM dotainfo.teams;"); //get a list of team info
+			if(isset($_POST["submitted"])) { //if the form was submitted
+				$teamID = get_teamID_by_name($db,$_POST["teamCombo"]);//get teamID for use in database
+				$query = $db->prepare("DELETE FROM dotainfo.teams WHERE teamID = ? LIMIT 1;"); //prepare the delete statement, limit to one just incase
 				$query->bind_param("i",$teamID);
-				if($query->execute()){
-					$_SESSION["teamRemoved"] = true;
-					if(isset($_POST["remove"]) && $_POST["remove"] == true) {
-						$query = $db->prepare("DELETE FROM dotainfo.matches WHERE teamOneID = ? OR teamTwoID = ?;");
+				if($query->execute()){ //if the query successfully executes
+					$_SESSION["teamRemoved"] = true; //set the team removed flag for index
+					if(isset($_POST["remove"]) && $_POST["remove"] == true) {//if remove was checked
+						$query = $db->prepare("DELETE FROM dotainfo.matches WHERE teamOneID = ? OR teamTwoID = ?;");//prepare the delete statement, use an OR to check for both cardinalities
 						$query->bind_param("ii",$teamID,$teamID);
 						$query->execute();
 					} 
-					header("Location: /index.php");
+					header("Location: /index.php");//once done, redirect to index
 				} else {
 					echo "<script type='text/javascript'>alert('Team Not Successfully Removed');</script>";
 				}

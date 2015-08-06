@@ -4,98 +4,105 @@
 		<?php 
 			session_start();
 			include("/common.php");
-			if(array_key_exists("teamAdded", $_SESSION) && $_SESSION["teamAdded"] == true) {
+			if(array_key_exists("teamAdded", $_SESSION) && $_SESSION["teamAdded"] == true) { //handler for successful team addition
 				echo "<script type='text/javascript'>alert('Team Successfully Added');</script>";
 				$_SESSION["teamAdded"] = false;
-			}
-			if(array_key_exists("matchAdded", $_SESSION) && $_SESSION["matchAdded"] == true) {
+			} 
+			if(array_key_exists("matchAdded", $_SESSION) && $_SESSION["matchAdded"] == true) { //handler for successful match addition
 				echo "<script type='text/javascript'>alert('Match Successfully Added');</script>";
 				$_SESSION["matchAdded"] = false;
 			}
-			if(array_key_exists("teamRemoved", $_SESSION) && $_SESSION["teamRemoved"] == true) {
+			if(array_key_exists("teamRemoved", $_SESSION) && $_SESSION["teamRemoved"] == true) { //handler for successful team removal
 				echo "<script type='text/javascript'>alert('Team Successfully Removed');</script>";
 				$_SESSION["teamRemoved"] = false;
 			}
 			$db = connect_and_get_DB();
-			$teamList = mysqli_query($db, "SELECT * FROM dotainfo.teams;");
-			if(isset($_POST["teamOneCombo"])) { //teamOne General Analysis
+			$teamList = mysqli_query($db, "SELECT * FROM dotainfo.teams;");//retrieve a list of teams
+			 //teamOne General Analysis - this code could be made smaller
+			 //game = one game
+			 //match = several games
+			if(isset($_POST["teamOneCombo"])) {
 			$teamOneID = get_teamID_by_name($db,$_POST["teamOneCombo"]);
-				if($teamOneID != false) {
-					$teamOneGamesOne = mysqli_query($db,"SELECT * From dotainfo.matches WHERE teamOneID = " . $teamOneID . ";");
-					$teamOneGamesTwo = mysqli_query($db,"SELECT * From dotainfo.matches WHERE teamTwoID = " . $teamOneID . ";"); //check for both cardinalities
-					$teamOneTotalMatchWins = array();
-					$teamOneTotalMatches = 0;
+				if($teamOneID != false) { 
+					$teamOneMatchesOne = mysqli_query($db,"SELECT * From dotainfo.matches WHERE teamOneID = " . $teamOneID . ";");
+					$teamOneMatchesTwo = mysqli_query($db,"SELECT * From dotainfo.matches WHERE teamTwoID = " . $teamOneID . ";"); //check for both cardinalities
+					$teamOneTotalMatchWins = array(); //array index will be the teamID, value is win count. bucket sort
+					$teamOneTotalMatches = 0; //prepare variables so increment can function 
 					$teamOneTotalWonGames = 0;
 					$teamOneTotalGames = 0;
-					while($row = $teamOneGamesOne->fetch_Assoc()) {
-						if(isset($teamOneTotalMatchWins[$row["teamWinner"]])) {
-							$teamOneTotalMatchWins[$row["teamWinner"]]++;
+					while($row = $teamOneMatchesOne->fetch_Assoc()) { //for all games in collection one
+						if(isset($teamOneTotalMatchWins[$row["teamWinner"]])) { //if a value is already set in the index
+							$teamOneTotalMatchWins[$row["teamWinner"]]++; //increment it 
 						} else {
-							$teamOneTotalMatchWins[$row["teamWinner"]] = 1;
+							$teamOneTotalMatchWins[$row["teamWinner"]] = 1; //else set to one for increment next time
 						}
-						
-						$teamOneTotalMatches++;
-						$teamOneTotalWonGames += $row["teamOneScore"];
-						$teamOneTotalGames += $row["teamOneScore"] + $row["teamTwoScore"];
+						$teamOneTotalMatches++;//increment the total matches analysed for team one
+						$teamOneTotalWonGames += $row["teamOneScore"]; //update their overall game score 
+						$teamOneTotalGames += $row["teamOneScore"] + $row["teamTwoScore"]; //keep track of their game total
 					}
-					while($row = $teamOneGamesTwo->fetch_Assoc()) {
-						if(isset($teamOneTotalMatchWins[$row["teamWinner"]])) {
-							$teamOneTotalMatchWins[$row["teamWinner"]]++;
+					while($row = $teamOneMatchesTwo->fetch_Assoc()) { //for all games in collection two
+						if(isset($teamOneTotalMatchWins[$row["teamWinner"]])) { //if a value is already set in the index
+							$teamOneTotalMatchWins[$row["teamWinner"]]++;//increment it 
 						} else {
-							$teamOneTotalMatchWins[$row["teamWinner"]] = 1;
+							$teamOneTotalMatchWins[$row["teamWinner"]] = 1;//else set to one for increment next time
 						}
-						$teamOneTotalMatches++;
-						$teamOneTotalWonGames += $row["teamTwoScore"];
-						$teamOneTotalGames += $row["teamOneScore"] + $row["teamTwoScore"];
+						$teamOneTotalMatches++;//increment the total matches analysed for the team
+						$teamOneTotalWonGames += $row["teamTwoScore"]; //update their overall game score
+						$teamOneTotalGames += $row["teamOneScore"] + $row["teamTwoScore"]; //keep track of their game total
 					}
 				}
-				if(!array_key_exists($teamOneID, $teamOneTotalMatchWins)) $teamOneTotalMatchWins[$teamOneID] = 0; //if the team won no games place that in array
+				if(!array_key_exists($teamOneID, $teamOneTotalMatchWins)) $teamOneTotalMatchWins[$teamOneID] = 0; //if the team won no games place that in array to prevent errors
+				//gets team location and tier info
 				$teamList->data_seek(0);
 				while($row = $teamList -> fetch_assoc()) {
 					if($row["teamName"] == $_POST["teamTwoCombo"]) {
 						$teamOneLocation = $row["teamLocation"];
 						$teamOneTier = $row["teamTier"];
+						break; //once the match is found and info stored break from while loop
 					}
 				}
 			}
-			if(isset($_POST["teamTwoCombo"])) { //team Two General Analysis
+			//team Two General Analysis  - this code could be made smaller due to repetition
+			if(isset($_POST["teamTwoCombo"])) { 
 				$teamTwoResult = mysqli_query($db, "SELECT teamID FROM dotainfo.teams WHERE teamName = '" . $_POST["teamTwoCombo"] . "';"); 
 				$teamTwoID = get_teamID_by_name($db,$_POST["teamTwoCombo"]);
 					if($teamTwoID != false) {
-					$teamTwoGamesOne = mysqli_query($db,"SELECT * From dotainfo.matches WHERE teamOneID = " . $teamTwoID . ";");
-					$teamTwoGamesTwo = mysqli_query($db,"SELECT * From dotainfo.matches WHERE teamTwoID = " . $teamTwoID . ";"); //check for both cardinalities
-					$teamTwoTotalMatchWins = array();
-					$teamTwoTotalMatches = 0;
+					$teamTwoMatchesOne = mysqli_query($db,"SELECT * From dotainfo.matches WHERE teamOneID = " . $teamTwoID . ";");
+					$teamTwoMatchesTwo = mysqli_query($db,"SELECT * From dotainfo.matches WHERE teamTwoID = " . $teamTwoID . ";"); //check for both cardinalities
+					$teamTwoTotalMatchWins = array(); //array index will be the teamID, value is win count. bucket sort
+					$teamTwoTotalMatches = 0; //prepare variables so increment can function 
 					$teamTwoTotalWonGames = 0;
 					$teamTwoTotalGames = 0;
-					while($row = $teamTwoGamesOne->fetch_Assoc()) {
-						if(isset($teamTwoTotalMatchWins[$row["teamWinner"]])) {
-							$teamTwoTotalMatchWins[$row["teamWinner"]]++;
+					while($row = $teamTwoMatchesOne->fetch_Assoc()) { //for all games in collection one
+						if(isset($teamTwoTotalMatchWins[$row["teamWinner"]])) { //if a value is already set in the index
+							$teamTwoTotalMatchWins[$row["teamWinner"]]++;//increment it 
 						} else {
-							$teamTwoTotalMatchWins[$row["teamWinner"]] = 1;
+							$teamTwoTotalMatchWins[$row["teamWinner"]] = 1;//else set to one for increment next time
 						}
 						
-						$teamTwoTotalMatches++;
-						$teamTwoTotalWonGames += $row["teamOneScore"];
-						$teamTwoTotalGames += $row["teamOneScore"] + $row["teamTwoScore"];
+						$teamTwoTotalMatches++;//increment the total matches analysed for the team
+						$teamTwoTotalWonGames += $row["teamOneScore"];//update their overall game score
+						$teamTwoTotalGames += $row["teamOneScore"] + $row["teamTwoScore"];//keep track of their game total
 					}
-					while($row = $teamTwoGamesTwo->fetch_Assoc()) {
-						if(isset($teamTwoTotalMatchWins[$row["teamWinner"]])) {
-							$teamTwoTotalMatchWins[$row["teamWinner"]]++;
+					while($row = $teamTwoMatchesTwo->fetch_Assoc()) {//for all games in collection one
+						if(isset($teamTwoTotalMatchWins[$row["teamWinner"]])) { //if a value is already set in the index
+							$teamTwoTotalMatchWins[$row["teamWinner"]]++;//increment it 
 						} else {
-							$teamTwoTotalMatchWins[$row["teamWinner"]] = 1;
+							$teamTwoTotalMatchWins[$row["teamWinner"]] = 1;//else set to one for increment next time
 						}
-						$teamTwoTotalMatches++;
-						$teamTwoTotalWonGames += $row["teamTwoScore"];
-						$teamTwoTotalGames += $row["teamOneScore"] + $row["teamTwoScore"];
+						$teamTwoTotalMatches++;//increment the total matches analysed for the team
+						$teamTwoTotalWonGames += $row["teamTwoScore"];//update their overall game score
+						$teamTwoTotalGames += $row["teamOneScore"] + $row["teamTwoScore"];//keep track of their game total
 					}
 				}
-				if(!array_key_exists($teamTwoID, $teamTwoTotalMatchWins)) $teamTwoTotalMatchWins[$teamTwoID] = 0;
+				if(!array_key_exists($teamTwoID, $teamTwoTotalMatchWins)) $teamTwoTotalMatchWins[$teamTwoID] = 0;//if the team won no games place that in array to prevent errors
+				//gets location and tier data
 				$teamList->data_seek(0);
 				while($row = $teamList -> fetch_assoc()) {
 					if($row["teamName"] == $_POST["teamTwoCombo"]) {
 						$teamTwoLocation = $row["teamLocation"];
 						$teamTwoTier = $row["teamTier"];
+						break;//once the match is found and info stored break from while loop
 					}
 				}
 			}
@@ -109,10 +116,10 @@
 					$teamVsResults[2] = array(0=>0,$teamOneID=>0,$teamTwoID=>0);
 					$teamVsResults[3] = array(0=>0,$teamOneID=>0,$teamTwoID=>0);
 					$teamVsResults[5] = array(0=>0,$teamOneID=>0,$teamTwoID=>0);
-					$teamVsGameCount = 0;
-					while($row = $teamVsQueryResult->fetch_Assoc()){
+					$teamVsGameCount = 0; //initialise to permit increment
+					while($row = $teamVsQueryResult->fetch_Assoc()){//for all games in the collection
 						$teamVsGameCount++;
-						$teamVsResults[$row["matchType"]][$row["teamWinner"]]++;
+						$teamVsResults[$row["matchType"]][$row["teamWinner"]]++;//increment the number of wins in the [bestOf][teamID] index
 					}
 				}
 			}	

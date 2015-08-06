@@ -5,28 +5,28 @@
 			session_start();
 			include("/common.php");
 			$db = connect_and_get_DB();
-			$teamList = mysqli_query($db, "SELECT * FROM dotainfo.teams;");
-			if(isset($_POST["submitted"])) {
-				if(isset($_POST["teamOneCombo"]) && isset($_POST["teamTwoCombo"]) && isset($_POST["bestOf"]) && isset($_POST["teamOneWins"]) && isset ($_POST["teamTwoWins"])) {
-					if($_POST["teamOneCombo"] != $_POST["teamTwoCombo"]) {
+			$teamList = mysqli_query($db, "SELECT * FROM dotainfo.teams;");//get a list of team info
+			if(isset($_POST["submitted"])) {//if the page has POSTed
+				if(isset($_POST["teamOneCombo"]) && isset($_POST["teamTwoCombo"]) && isset($_POST["bestOf"]) && isset($_POST["teamOneWins"]) && isset ($_POST["teamTwoWins"])) {//if all data fields aren't empty
+					if($_POST["teamOneCombo"] != $_POST["teamTwoCombo"]) { //if the teams are different
 						$teamOneWins = $_POST["teamOneWins"];
-						$teamTwoWins = $_POST["teamTwoWins"];
-						$bestOf = $_POST["bestOf"];
-						if($teamOneWins + $teamTwoWins <= $bestOf) {
-							$insertQuery = $db->prepare("INSERT INTO dotainfo.matches (TeamOneID,TeamTwoID,teamWinner,matchType,teamOneScore,teamTwoScore) VALUES (?,?,?,?,?,?);");
+						$teamTwoWins = $_POST["teamTwoWins"]; 
+						$bestOf = $_POST["bestOf"]; //place post in variables for ease of use
+						if($teamOneWins + $teamTwoWins <= $bestOf) { //if the win counts less than or equal to the bestOf count
+							$insertQuery = $db->prepare("INSERT INTO dotainfo.matches (TeamOneID,TeamTwoID,teamWinner,matchType,teamOneScore,teamTwoScore) VALUES (?,?,?,?,?,?);");//prepare SQL statement
 							$teamOneID = get_teamID_by_name($db,$_POST["teamOneCombo"]);
-							$teamTwoID = get_teamID_by_name($db,$_POST["teamTwoCombo"]);
-							if($teamOneWins > $teamTwoWins) {
+							$teamTwoID = get_teamID_by_name($db,$_POST["teamTwoCombo"]);//get numeric ID's for use in database
+							if($teamOneWins > $teamTwoWins) { //if team one won the most games, set them as the winner
 								$teamWinner = $teamOneID;
-							} elseif($teamOneWins < $teamTwoWins) {
+							} elseif($teamOneWins < $teamTwoWins) {//if team two won the most games, set them as the winner
 								$teamWinner = $teamTwoID;
-							} elseif($teamOneWins == $teamTwoWins) {
+							} elseif($teamOneWins == $teamTwoWins) {//if it was a draw, make nobody the winner
 								$teamWinner = 0;
 							}
-							$insertQuery->bind_param("iiiiii",$teamOneID,$teamTwoID,$teamWinner,$bestOf,$teamOneWins,$teamTwoWins);
-							if($insertQuery->execute()){
-								$_SESSION["matchAdded"] = true;
-								header("Location: /index.php");
+							$insertQuery->bind_param("iiiiii",$teamOneID,$teamTwoID,$teamWinner,$bestOf,$teamOneWins,$teamTwoWins); //bind the parameters to the query
+							if($insertQuery->execute()){ //if the query executed successfully
+								$_SESSION["matchAdded"] = true; //set session flag for return to index
+								header("Location: /index.php"); //return to index
 							}
 						} else {
 							echo "<script type='text/javascript'>alert('Invalid Win Counts');</script>";
